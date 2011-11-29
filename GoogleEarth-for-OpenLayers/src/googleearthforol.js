@@ -10,17 +10,9 @@
  * @constructor
  * @param {google.maps.Map} map the Map associated with this Earth instance.
  */
-function GoogleEarth(map) {
+function GoogleEarth( olmap ) {
   if (!google || !google.earth) {
     throw 'google.earth not loaded';
-  }
-
-  if (!google.earth.isSupported()) {
-    throw 'Google Earth API is not supported on this system';
-  }
-
-  if (!google.earth.isInstalled()) {
-    throw 'Google Earth API is not installed on this system';
   }
 
   /**
@@ -29,15 +21,30 @@ function GoogleEarth(map) {
    * @type {string} */
   this.RED_ICON_ = 'http://maps.google.com/mapfiles/kml/paddle/red-circle.png';
 
+  this.olmap_ = olmap;
+
+//  this.layer_ = new OpenLayers.Layer.Google( "Google Earth" );
+//  this.layer_ = new OpenLayers.Layer.Google(
+//      "Google Earth",
+//      {type: GoogleEarth.MAP_TYPE_ID, numZoomLevels: 22, visibility: false}
+//  );
+  this.layer_ = new OpenLayers.Layer.Google(
+      "Google Earth",
+      {type: google.maps.MapTypeId.SATELLITE, numZoomLevels: 22, visibility: false}
+  );
+
+  this.olmap_.addLayers([ this.layer_ ]);
+
   /**
    * @private
    * @type {google.maps.Map} */
-  this.map_ = map;
+  this.map_ = this.layer_.mapObject;
 
   /**
    * @private
    * @type {Node} */
-  this.mapDiv_ = map.getDiv();
+  this.mapDiv_ = this.map_.getDiv();
+//  this.mapDiv_ = olmap.div;
 
   /**
    * @private
@@ -52,12 +59,7 @@ function GoogleEarth(map) {
   /**
    * @private
    * @type {Object} */
-  this.moveEvents_ = [];
-
-  /**
-   * @private
-   * @type {Object} */
-  this.overlays_ = {};
+  this.placemarks_ = {};
 
   /**
    * @private
@@ -65,14 +67,23 @@ function GoogleEarth(map) {
   this.lastClickedPlacemark_ = null;
 
   /**
-   * Keep track of each time the 3D view is reloaded/refreshed
    * @private
    * @type {number} */
   this.displayCounter_ = 0;
 
   this.addEarthMapType_();
   this.addEarthControl_();
+ 
+  if (!google.earth.isSupported()) {
+    throw 'Google Earth API is not supported on this system';
+  }
+
+  if (!google.earth.isInstalled()) {
+    throw 'Google Earth API is not installed on this system';
+  }
+
 }
+
 window['GoogleEarth'] = GoogleEarth;
 
 /**
@@ -129,19 +140,16 @@ GoogleEarth.prototype.addEarthMapType_ = function() {
   });
 
   map.mapTypes.set(GoogleEarth.MAP_TYPE_ID, earthMapType);
-
-  var options = /** @type {google.maps.MapTypeControlOptions} */({
-    mapTypeControlOptions: {
-      mapTypeIds: [google.maps.MapTypeId.ROADMAP,
-                   google.maps.MapTypeId.SATELLITE,
-                   GoogleEarth.MAP_TYPE_ID]
-    }
-  });
-
-  map.setOptions(options);
+  this.layer_.type = GoogleEarth.MAP_TYPE_ID;
 
   var that = this;
+  this.oldType = this.map_.mapTypeId;
   google.maps.event.addListener(map, 'maptypeid_changed', function() {
+    var newType = that.map_.mapTypeId;
+    if( newType == that.oldType )
+      return;
+    
+    that.oldType = newType;
     that.mapTypeChanged_();
   });
 };
@@ -161,17 +169,84 @@ GoogleEarth.prototype.mapTypeChanged_ = function() {
  * @private
  */
 GoogleEarth.prototype.showEarth_ = function() {
-  var mapTypeControlDiv = this.findMapTypeControlDiv_();
-  this.setZIndexes_(mapTypeControlDiv);
-  this.addShim_(mapTypeControlDiv);
-
+  var mapTypeControlDiv = this.findLayerSwitcherDiv_();
+  if (mapTypeControlDiv) {
+    this.setZIndexes_(mapTypeControlDiv);
+    this.addShim_(mapTypeControlDiv);
+  }
+  
   this.controlDiv_.style.display = '';
 
   this.earthVisible_ = true;
   if (!this.instance_) {
     this.initializeEarth_();
+
+    $(".layersDiv").append('<input type="checkbox" id="namesEnabledCheck"/><span class="labelSpan" style="vertical-align: baseline;" id="namesEnabled">Google Earth Names</span><br>');
+  $("#namesEnabled").click( function(){
+    if( $("#namesEnabledCheck")[0].checked )
+    {
+      googleEarth.getInstance().getLayerRoot().enableLayerById(googleEarth.getInstance().LAYER_BORDERS, false);
+      $("#namesEnabledCheck").attr( "checked", false )
+      return false;
+    }
+    else
+    {
+      googleEarth.getInstance().getLayerRoot().enableLayerById(googleEarth.getInstance().LAYER_BORDERS, true);
+      $("#namesEnabledCheck").attr( "checked", true )
+      return false;
+    }
+  });
+
+    $(".layersDiv").append('<input type="checkbox" id="sunEnabledCheck"/><span class="labelSpan" style="vertical-align: baseline;" id="sunEnabled">Google Earth Sun</span><br>');
+  $("#sunEnabled").click( function(){
+    if( $("#sunEnabledCheck")[0].checked )
+    {
+      googleEarth.getInstance().getSun().setVisibility(false);
+      $("#sunEnabledCheck").attr( "checked", false )
+      return false;
+    }
+    else
+    {
+      googleEarth.getInstance().getSun().setVisibility(true);
+      $("#sunEnabledCheck").attr( "checked", true )
+      return false;
+    }
+  });
+
+    $(".layersDiv").append('<input type="checkbox" id="atmEnabledCheck" checked/><span class="labelSpan" style="vertical-align: baseline;" id="atmEnabled">Google Earth Atmosphere</span><br>');
+  $("#atmEnabled").click( function(){
+    if( $("#atmEnabledCheck")[0].checked )
+    {
+      googleEarth.getInstance().getOptions().setAtmosphereVisibility(false);
+      $("#atmEnabledCheck").attr( "checked", false )
+      return false;
+    }
+    else
+    {
+      googleEarth.getInstance().getOptions().setAtmosphereVisibility(true);
+      $("#atmEnabledCheck").attr( "checked", true )
+      return false;
+    }
+  });
+  
+    $(".layersDiv").append('<input type="checkbox" id="gridEnabledCheck"/><span class="labelSpan" style="vertical-align: baseline;" id="gridEnabled">Google Earth Grid</span><br>');
+  $("#gridEnabled").click( function(){
+    if( $("#gridEnabledCheck")[0].checked )
+    {
+      googleEarth.getInstance().getOptions().setGridVisibility(false);
+      $("#gridEnabledCheck").attr( "checked", false )
+      return false;
+    }
+    else
+    {
+      googleEarth.getInstance().getOptions().setGridVisibility(true);
+      $("#gridEnabledCheck").attr( "checked", true )
+      return false;
+    }
+  });
     return;
   }
+
   this.refresh_();
 };
 
@@ -179,22 +254,11 @@ GoogleEarth.prototype.showEarth_ = function() {
  * @private
  */
 GoogleEarth.prototype.refresh_ = function() {
-  this.overlays_ = {};
+  this.placemarks_ = {};
   this.flyToMapView_(true);
   this.clearPlacemarks_();
   this.displayCounter_++;
-  this.clearMoveEvents_();
   this.addMapOverlays_();
-};
-
-/**
- * Clear all marker position_changed events
- * @private
- */
-GoogleEarth.prototype.clearMoveEvents_ = function() {
-  for (var i = 0, evnt; evnt = this.moveEvents_[i]; i++) {
-    google.maps.event.removeListener(evnt);
-  }
 };
 
 /**
@@ -268,25 +332,14 @@ GoogleEarth.getKMLColor_ = function(hex, opacity) {
   return abgr;
 };
 
-
-/**
- * @param {google.maps.MVCObject} overlay the map overlay.
- * @return {String} ID for the Placemark.
- * @private
- */
-GoogleEarth.prototype.generatePlacemarkId_ = function(overlay) {
-  var placemarkId = this.displayCounter_ + 'GEV3_' + overlay['__gme_id'];
-  return placemarkId;
-};
-
 /**
  * @param {google.maps.MVCObject} overlay the map overlay.
  * @return {google.earth.KmlPlacemark} placemark the placemark.
  * @private
  */
 GoogleEarth.prototype.createPlacemark_ = function(overlay) {
-  var placemarkId = this.generatePlacemarkId_(overlay);
-  this.overlays_[placemarkId] = overlay;
+  var placemarkId = this.displayCounter_ + 'GEV3_' + overlay['__gme_id'];
+  this.placemarks_[placemarkId] = overlay;
   return this.instance_.createPlacemark(placemarkId);
 };
 
@@ -348,55 +401,89 @@ GoogleEarth.prototype.addGroundOverlay_ = function(groundOverlay) {
  * @param {string} url for kml.
  * @private
  */
-GoogleEarth.prototype.addKML_ = function(url) {
+GoogleEarth.prototype.addKML_ = function(kmlstr) {
   var ge = this.instance_;
-  google.earth.fetchKml(ge, url, function(kml) {
-    if (!kml) {
-      // wrap alerts in API callbacks and event handlers
-      // in a window.setTimeout to prevent deadlock in some browsers
-      window.setTimeout(function() {
-        alert('Bad or null KML.');
-      }, 0);
-      return;
-    }
+//  google.earth.fetchKml(ge, url, function(kml) {
+//    if (!kml) {
+//      // wrap alerts in API callbacks and event handlers
+//      // in a window.setTimeout to prevent deadlock in some browsers
+//      window.setTimeout(function() {
+//        alert('Bad or null KML.');
+//      }, 0);
+//      return;
+//    }
+  kml = ge.parseKml( kmlstr );
     ge.getFeatures().appendChild(kml);
- });
+  
+// });
 };
 
-/**
- * @param {String} placemarkId the id of the placemark.
- * @private
- */
-GoogleEarth.prototype.updatePlacemark_ = function(placemarkId) {
-  //TODO(jlivni) generalize to work with more than just Markers/Points
-  var marker = this.overlays_[placemarkId];
-  var placemark = this.instance_.getElementById(placemarkId);
-  var geom = placemark.getGeometry();
-  var position = marker.getPosition();
-  geom.setLatitude(position.lat());
-  geom.setLongitude(position.lng());
-};
+GoogleEarth.prototype.baseUrl = (function() {
+    var url = location.href;  // entire url including querystring - also: window.location.href;
+    var baseURL = url.substring(0, url.indexOf('/', 14));
+
+
+    if (baseURL.indexOf('http://localhost') != -1) {
+        // Base Url for localhost
+        var url = location.href;  // window.location.href;
+        var pathname = location.pathname;  // window.location.pathname;
+        var index1 = url.indexOf(pathname);
+        var index2 = url.indexOf("/", index1 + 1);
+        var baseLocalUrl = url.substr(0, index2);
+
+        return baseLocalUrl + "/";
+    }
+    else {
+        // Root Url for domain name
+        return baseURL + "/";
+    }
+})();
+
+GoogleEarth.prototype.absoluteUrl = function( str )
+{
+  if( str.indexOf( "http" ) != -1 )
+    return str;
+
+  var prefix = "../"
+  
+  while (str != (str = str.replace( prefix, "")));
+  return GoogleEarth.prototype.baseUrl + str;
+}
 
 /**
  * @param {google.maps.Marker} marker The map marker.
  * @private
  */
-GoogleEarth.prototype.createPoint_ = function(marker) {
-  if (!marker.getPosition()) {
-    return;
-  }
+GoogleEarth.prototype.createPoint_ = function( feature ) 
+{
+  var attributes = feature.attributes;
+  var geometry = feature.geometry;
+  var style = feature.style;
+
   var ge = this.instance_;
-  var placemark = this.createPlacemark_(marker);
-  if (marker.getTitle()) {
-    placemark.setName(marker.getTitle());
+  var placemark = this.createPlacemark_(feature);
+  if (attributes.name) {
+    placemark.setName(attributes.name);
   }
+  try
+  {
+    if (attributes.when) {
+      var ISOString = OpenLayers.Date.toISOString( attributes.when );
+      var timeStamp = this.instance_.createTimeStamp ( ISOString );  
+      timeStamp.getWhen().set( ISOString );
+      placemark.setTimePrimitive( timeStamp );
+    }
+  }
+  catch(e){}
 
   // Create style map for placemark
   var icon = ge.createIcon('');
-  if (marker.getIcon()) {
-    //TODO(jlivni) fix for if it's a markerImage
-    icon.setHref(marker.getIcon());
-  } else {
+
+  if(  style.externalGraphic ) {
+        
+    icon.setHref( GoogleEarth.prototype.absoluteUrl( style.externalGraphic ));
+  } else 
+  {
     icon.setHref(this.RED_ICON_);
   }
 
@@ -406,21 +493,13 @@ GoogleEarth.prototype.createPoint_ = function(marker) {
 
   // Create point
   var point = ge.createPoint('');
-  point.setLatitude(marker.getPosition().lat());
-  point.setLongitude(marker.getPosition().lng());
+  var lonlat = OpenLayers.Layer.SphericalMercator.inverseMercator( geometry.x, geometry.y );
+  point.setLatitude( lonlat.lat );
+  point.setLongitude( lonlat.lon );
   placemark.setGeometry(point);
 
   ge.getFeatures().appendChild(placemark);
 
-  //add listener for marker move on Map
-  var that = this;
-  var moveEvent = google.maps.event.addListener(marker,
-    'position_changed',
-    function() {
-      var placemarkId = that.generatePlacemarkId_(marker);
-      that.updatePlacemark_(placemarkId);
-    });
-  this.moveEvents_.push(moveEvent);
 };
 
 /**
@@ -515,9 +594,16 @@ GoogleEarth.prototype.createCircle_ = function(circle) {
  * @param {google.maps.Polyline} polyline The map polyline overlay.
  * @private
  */
-GoogleEarth.prototype.createPolyline_ = function(polyline) {
+GoogleEarth.prototype.createPolyline_ = function( feature ) {
+  var attributes = feature.attributes;
+  var geometry = feature.geometry;
+  var olstyle = feature.style;
+
   var ge = this.instance_;
-  var placemark = this.createPlacemark_(polyline);
+  var placemark = this.createPlacemark_(feature);
+  if (attributes.name) {
+    placemark.setName(attributes.name);
+  }
 
   // Create linestring
   var lineString = ge.createLineString('');
@@ -525,14 +611,15 @@ GoogleEarth.prototype.createPolyline_ = function(polyline) {
   placemark.setGeometry(lineString);
 
   //set the style
-  var style = this.createStyle_(polyline);
+  var style = this.createStyle_(olstyle);
   placemark.setStyleSelector(style);
 
   var coords = lineString.getCoordinates();
-  var path = polyline.getPath().getArray();
+  var path = geometry.components;
   //TODO(jlivni) use getPaths for case of multiple rings
-  for (var i = 0, latLng; latLng = path[i]; i++) {
-    coords.pushLatLngAlt(latLng.lat(), latLng.lng(), 0);
+  for (var i = 0, point; point = path[i]; i++) {
+    var lonlat = OpenLayers.Layer.SphericalMercator.inverseMercator( point.x, point.y );
+    coords.pushLatLngAlt( lonlat.lat, lonlat.lon, 0);
   }
 
   ge.getFeatures().appendChild(placemark);
@@ -543,17 +630,17 @@ GoogleEarth.prototype.createPolyline_ = function(polyline) {
  * @return {google.earth.KmlStyle} the style.
  * @private
  */
-GoogleEarth.prototype.createStyle_ = function(overlay) {
+GoogleEarth.prototype.createStyle_ = function(olstyle) {
   var style = this.instance_.createStyle('');
   var polyStyle = style.getPolyStyle();
   var lineStyle = style.getLineStyle();
 
-  lineStyle.setWidth(this.getMVCVal_(overlay, 'strokeWeight', 3));
+  lineStyle.setWidth(parseFloat(this.getMVCVal_(olstyle, 'strokeWidth', 3)));
 
-  var strokeOpacity = this.getMVCVal_(overlay, 'strokeOpacity', 1);
-  var fillOpacity = this.getMVCVal_(overlay, 'fillOpacity', 0.3);
-  var strokeColor = this.getMVCVal_(overlay, 'strokeColor', '#000000');
-  var fillColor = this.getMVCVal_(overlay, 'fillColor', '#000000');
+  var strokeOpacity = this.getMVCVal_(olstyle, 'strokeOpacity', 1);
+  var fillOpacity = this.getMVCVal_(olstyle, 'fillOpacity', 0.3);
+  var strokeColor = this.getMVCVal_(olstyle, 'strokeColor', '#000000');
+  var fillColor = this.getMVCVal_(olstyle, 'fillColor', '#000000');
 
   lineStyle.getColor().set(GoogleEarth.getKMLColor_(strokeColor,
                                                    strokeOpacity));
@@ -571,7 +658,7 @@ GoogleEarth.prototype.createStyle_ = function(overlay) {
  * @private
  */
 GoogleEarth.prototype.getMVCVal_ = function(mvcObject, property, def) {
-  var val = mvcObject.get(property);
+  var val = mvcObject[property];
   if (typeof val == 'undefined') {
     return def;
   } else {
@@ -585,27 +672,27 @@ GoogleEarth.prototype.getMVCVal_ = function(mvcObject, property, def) {
  */
 GoogleEarth.prototype.addMapOverlays_ = function() {
   var overlays = this.getOverlays_();
-  for (var i = 0, marker; marker = overlays['Marker'][i]; i++) {
-    this.createPoint_(marker);
+  for (var i = 0, point; point = overlays['OpenLayers.Geometry.Point'][i]; i++) {
+    this.createPoint_(point);
   }
-  for (var i = 0, polygon; polygon = overlays['Polygon'][i]; i++) {
-    this.createPolygon_(polygon);
+//  for (var i = 0, polygon; polygon = overlays['Polygon'][i]; i++) {
+//    this.createPolygon_(polygon);
+//  }
+  for (var i = 0, linestring; linestring = overlays['OpenLayers.Geometry.LineString'][i]; i++) {
+    this.createPolyline_(linestring);
   }
-  for (var i = 0, polyline; polyline = overlays['Polyline'][i]; i++) {
-    this.createPolyline_(polyline);
-  }
-  for (var i = 0, rectangle; rectangle = overlays['Rectangle'][i]; i++) {
-    this.createRectangle_(rectangle);
-  }
-  for (var i = 0, circle; circle = overlays['Circle'][i]; i++) {
-    this.createCircle_(circle);
-  }
-  for (var i = 0, kml; kml = overlays['KmlLayer'][i]; i++) {
-    this.addKML_(kml.getUrl());
-  }
-  for (var i = 0, overlay; overlay = overlays['GroundOverlay'][i]; i++) {
-    this.addGroundOverlay_(overlay);
-  }
+//  for (var i = 0, rectangle; rectangle = overlays['Rectangle'][i]; i++) {
+//    this.createRectangle_(rectangle);
+//  }
+//  for (var i = 0, circle; circle = overlays['Circle'][i]; i++) {
+//    this.createCircle_(circle);
+//  }
+//  for (var i = 0, kml; kml = overlays['KmlLayer'][i]; i++) {
+//    this.addKML_( kml.responseText );
+//  }
+//  for (var i = 0, overlay; overlay = overlays['GroundOverlay'][i]; i++) {
+//    this.addGroundOverlay_(overlay);
+//  }
 };
 
 /**
@@ -614,13 +701,14 @@ GoogleEarth.prototype.addMapOverlays_ = function() {
 GoogleEarth.prototype.initializeEarth_ = function() {
   var that = this;
   google.earth.createInstance(this.earthDiv_, function(instance) {
+//  google.earth.createInstance(this.mapDiv_, function(instance) {
     that.instance_ = /** @type {google.earth.GEPlugin} */(instance);
     that.addEarthEvents_();
     that.refresh_();
   }, function(e) {
-    that.hideEarth_();
+//    that.hideEarth_();
     //TODO(jlivni) record previous maptype
-    that.map_.setMapTypeId(google.maps.MapTypeId.ROADMAP);
+//    that.map_.setMapTypeId(google.maps.MapTypeId.ROADMAP);
     throw 'Google Earth API failed to initialize: ' + e;
   });
 };
@@ -642,8 +730,8 @@ GoogleEarth.prototype.addEarthEvents_ = function() {
 
   // add some layers
   var layerRoot = ge.getLayerRoot();
-  layerRoot.enableLayerById(ge.LAYER_BORDERS, true);
-  layerRoot.enableLayerById(ge.LAYER_ROADS, true);
+//  layerRoot.enableLayerById(ge.LAYER_BORDERS, true);
+//  layerRoot.enableLayerById(ge.LAYER_ROADS, true);
 
   var that = this;
   google.maps.event.addListener(this.map_,
@@ -664,7 +752,7 @@ GoogleEarth.prototype.addEarthEvents_ = function() {
    // On click of a placemark we want to trigger the map click event.
   google.earth.addEventListener(ge.getGlobe(), 'click', function(event) {
     var target = event.getTarget();
-    var overlay = that.overlays_[target.getId()];
+    var overlay = that.placemarks_[target.getId()];
     if (overlay) {
       event.preventDefault();
       // Close any currently opened map info windows.
@@ -684,6 +772,9 @@ GoogleEarth.prototype.addEarthEvents_ = function() {
  * @private
  */
 GoogleEarth.prototype.matchMapToEarth_ = function() {
+  if( this.instance == undefined )
+    return;
+  
   var lookAt = this.instance_.getView().copyAsLookAt(
       this.instance_.ALTITUDE_RELATIVE_TO_GROUND);
   var range = lookAt.getRange();
@@ -709,7 +800,7 @@ GoogleEarth.prototype.switchToMapView_ = function() {
   }
 
   // First, set map to match current earth view.
-  this.matchMapToEarth_();
+//  this.matchMapToEarth_();
 
   // Now fly Earth to match the map view.
   var that = this;
@@ -749,11 +840,13 @@ GoogleEarth.prototype.setZIndexes_ = function(mapTypeControlDiv) {
   for (var i = 0, sibling; sibling = siblings[i]; i++) {
     sibling['__gme_ozi'] = sibling.style.zIndex;
     // Sets the zIndex of all controls to be behind Earth.
-    sibling.style.zIndex = -1;
+    sibling.style.zIndex = 0;
   }
 
   mapTypeControlDiv['__gme_ozi'] = oldIndex;
-  this.controlDiv_.style.zIndex = mapTypeControlDiv.style.zIndex = 0;
+//  this.controlDiv_.style.zIndex = mapTypeControlDiv.style.zIndex = 2000;
+  this.controlDiv_.style.zIndex = 2000;
+  mapTypeControlDiv.style.zIndex = 2001;
 };
 
 /**
@@ -762,8 +855,10 @@ GoogleEarth.prototype.setZIndexes_ = function(mapTypeControlDiv) {
 GoogleEarth.prototype.unsetZIndexes_ = function() {
   var siblings = this.controlDiv_.parentNode.childNodes;
   for (var i = 0, sibling; sibling = siblings[i]; i++) {
-    // Set the old zIndex back
-    sibling.style.zIndex = sibling['__gme_ozi'];
+    if (sibling['__gme_ozi']) {
+      // Set the old zIndex back
+      sibling.style.zIndex = sibling['__gme_ozi'];
+    }
   }
 };
 
@@ -803,11 +898,22 @@ GoogleEarth.prototype.removeShim_ = function() {
  * @return {Node} the map type control div.
  */
 GoogleEarth.prototype.findMapTypeControlDiv_ = function() {
-  var title = 'title=[\'\"]?' + this.earthTitle_ + '[\"\']?';
-  var regex = new RegExp(title);
+  var title = '>' + this.earthTitle_ + '<';
+
   var siblings = this.controlDiv_.parentNode.childNodes;
   for (var i = 0, sibling; sibling = siblings[i]; i++) {
-    if (regex.test(sibling.innerHTML)) {
+    if (sibling.innerHTML.indexOf(title) != -1) {
+      return sibling;
+    }
+  }
+};
+
+GoogleEarth.prototype.findLayerSwitcherDiv_ = function() {
+  var id = 'LayerSwitcher';
+
+  var siblings = this.mapDiv_.parentNode.childNodes;
+  for (var i = 0, sibling; sibling = siblings[i]; i++) {
+    if (sibling.id.indexOf(id) != -1) {
       return sibling;
     }
   }
@@ -820,6 +926,7 @@ GoogleEarth.prototype.addEarthControl_ = function() {
   var mapDiv = this.mapDiv_;
 
   var control = this.controlDiv_ = document.createElement('DIV');
+  control.id = "GEcontrol";
   control.style.position = 'absolute';
   control.style.width = 0;
   control.style.height = 0;
@@ -840,7 +947,8 @@ GoogleEarth.prototype.addEarthControl_ = function() {
 
   inner.appendChild(earthDiv);
 
-  this.map_.controls[google.maps.ControlPosition.TOP_LEFT].push(control);
+  var parentNode = this.findLayerSwitcherDiv_().parentNode;
+  parentNode.appendChild( control );
 
   var that = this;
 
@@ -870,7 +978,8 @@ GoogleEarth.prototype.getOverlaysForType_ = function(type) {
   for (var i in overlays) {
     if (overlays.hasOwnProperty(i)) {
       var overlay = overlays[i];
-      if (overlay.get('map') == this.map_) {
+//      if (overlay.get('map') == this.map_) 
+      {
         tmp.push(overlay);
       }
     }
@@ -925,53 +1034,77 @@ GoogleEarth.modifyOpen_ = function() {
  * @param {string} overlayClass overlay type, such as Marker, Polygon, etc.
  * @private
  */
-GoogleEarth.modifySetMap_ = function(overlayClass) {
-  var proto = google.maps[overlayClass].prototype;
-  proto['__gme_setMapOriginal'] = proto.setMap;
+//GoogleEarth.modifySetMap_ = function(overlayClass) {
+GoogleEarth.modifySetMap_ = function( e ) 
+{
+  if( e.feature == undefined || e.feature.geometry == undefined )
+     return;
 
-  GoogleEarth.overlays_[overlayClass] = {};
-  google.maps[overlayClass].prototype['setMap'] = function(map) {
-    if (map) {
-      if (!this['__gme_id']) {
-        this['__gme_id'] = GoogleEarth.counter_++;
-        GoogleEarth.overlays_[overlayClass][this['__gme_id']] = this;
-      }
-    } else {
-      delete GoogleEarth.overlays_[overlayClass][this['__gme_id']];
-      this['__gme_id'] = undefined;
-    }
-
-    this['__gme_setMapOriginal'](map);
-  };
+  var feature = e.feature;
+  var overlayClass = feature.geometry.CLASS_NAME;
+  
+  if (!feature['__gme_id']) 
+  {
+    feature['__gme_id'] = GoogleEarth.counter_++;
+    GoogleEarth.overlays_[overlayClass][ feature['__gme_id'] ] = feature;
+  }
 };
 
+GoogleEarth.modifyClearMap_ = function( e ) 
+{
+  if( e.feature == undefined || e.feature.geometry == undefined )
+     return;
+
+  var feature = e.feature;
+  var overlayClass = feature.geometry.CLASS_NAME;
+  
+  //  delete GoogleEarth.overlays_[overlayClass][this['__gme_id']];
+    //this['__gme_id'] = undefined;
+    delete GoogleEarth.overlays_[overlayClass][ feature['__gme_id'] ];
+}
+  
 /**
  * @const
  * @type {Array.<string>}
  */
-GoogleEarth.OVERLAY_CLASSES = ['Marker', 'Polyline', 'Polygon', 'Rectangle',
-    'Circle', 'KmlLayer', 'GroundOverlay', 'InfoWindow'];
+GoogleEarth.OVERLAY_CLASSES = ['OpenLayers.Geometry.Point', 'OpenLayers.Geometry.LineString' ];
+// 'Polygon', 'Rectangle',    'Circle', 'KmlLayer', 'GroundOverlay', 'InfoWindow'];
 
 /**
- * Keep track of total number of placemarks added.
  * @type {number}
  * @private
  */
 GoogleEarth.counter_ = 0;
 
+GoogleEarth.prototype.createOverlays_ = function() 
+{
+  var overlayClasses = GoogleEarth.OVERLAY_CLASSES;
+
+  for (var i = 0, overlayClass; overlayClass = overlayClasses[i]; i++) 
+  {
+    GoogleEarth.overlays_[overlayClass] = {};
+  }
+};
+
 /**
  * Wrapper to call appropriate prototype override methods for all overlays
  * @private
  */
-GoogleEarth.trackOverlays_ = function() {
-  var overlayClasses = GoogleEarth.OVERLAY_CLASSES;
-
-  for (var i = 0, overlayClass; overlayClass = overlayClasses[i]; i++) {
-    GoogleEarth.modifySetMap_(overlayClass);
-    if (overlayClass == 'InfoWindow') {
-      GoogleEarth.modifyOpen_();
-    }
-  }
+GoogleEarth.trackOverlays_ = function( layer ) {
+  
+//  olmap.events.register( 'addlayer', olmap, GoogleEarth.modifySetMap_ );
+    layer.events.register( 'featureadded', layer, GoogleEarth.modifySetMap_ );
+    layer.events.register( 'featureremoved', layer, GoogleEarth.modifyClearMap_ );
+    
+//  var overlayClasses = GoogleEarth.OVERLAY_CLASSES;
+//
+//  for (var i = 0, overlayClass; overlayClass = overlayClasses[i]; i++) {
+//    GoogleEarth.modifySetMap_(overlayClass);
+//    if (overlayClass == 'InfoWindow') {
+//      GoogleEarth.modifyOpen_();
+//    }
+//  }
 };
 
-GoogleEarth.trackOverlays_();
+GoogleEarth.prototype.createOverlays_();
+
