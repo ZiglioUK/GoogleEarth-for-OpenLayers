@@ -29,8 +29,13 @@
           mapTypeId: google.maps.MapTypeId.ROADMAP
         });
 
-        googleEarth = new GoogleEarth(map);
-
+        try {
+		    	googleEarth = new GoogleEarth(map);
+		    }
+		    catch(e){
+					alert(e);
+					return;
+				}
         google.maps.event.addListenerOnce(map, 'tilesloaded', addOverlays);
       }
 
@@ -122,6 +127,7 @@
   </head>
   <body>
     <h1>Earth V3</h1>
-    <div id="map"></div>
+    <div id="map" style="width:50%"></div>
+    <div id="earth" style="width:50%"></div>
   </body>
 </html>
