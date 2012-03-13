@@ -1,7 +1,7 @@
 h2. Google Earth for OpenLayers
 
 A port of the Google Earth API library to OpenLayers
-See http://google-maps-utility-library-v3.googlecode.com/svn/trunk/googleearth/docs/reference.html
+See: "http://google-maps-utility-library-v3.googlecode.com/svn/trunk/googleearth/docs/reference.html":http://google-maps-utility-library-v3.googlecode.com/svn/trunk/googleearth/docs/reference.html
 
 "demo":http://ziglionz.github.com/GoogleEarth-for-OpenLayers/
 
