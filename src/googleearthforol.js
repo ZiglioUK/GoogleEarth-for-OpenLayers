@@ -340,7 +340,8 @@ GoogleEarth.getKMLColor_ = function(hex, opacity) {
 GoogleEarth.prototype.createPlacemark_ = function(overlay) {
   var placemarkId = this.displayCounter_ + 'GEV3_' + overlay['__gme_id'];
   this.placemarks_[placemarkId] = overlay;
-  return this.instance_.createPlacemark(placemarkId);
+  overlay.placemark = this.instance_.createPlacemark(placemarkId);
+  return overlay.placemark;
 };
 
 /**
@@ -479,7 +480,7 @@ GoogleEarth.prototype.createPoint_ = function( feature )
   // Create style map for placemark
   var icon = ge.createIcon('');
 
-  if(  style.externalGraphic ) {
+  if(  style && style.externalGraphic ) {
         
     icon.setHref( GoogleEarth.prototype.absoluteUrl( style.externalGraphic ));
   } else 
@@ -672,13 +673,13 @@ GoogleEarth.prototype.getMVCVal_ = function(mvcObject, property, def) {
  */
 GoogleEarth.prototype.addMapOverlays_ = function() {
   var overlays = this.getOverlays_();
-  for (var i = 0, point; point = overlays['OpenLayers.Geometry.Point'][i]; i++) {
-    this.createPoint_(point);
+  for (var i = 0, point; point = overlays.Point[i]; i++) {
+    this.createPoint_(overlays.Point[i]);
   }
 //  for (var i = 0, polygon; polygon = overlays['Polygon'][i]; i++) {
 //    this.createPolygon_(polygon);
 //  }
-  for (var i = 0, linestring; linestring = overlays['OpenLayers.Geometry.LineString'][i]; i++) {
+  for (var i = 0, linestring; linestring = overlays.LineString[i]; i++) {
     this.createPolyline_(linestring);
   }
 //  for (var i = 0, rectangle; rectangle = overlays['Rectangle'][i]; i++) {
@@ -1041,7 +1042,19 @@ GoogleEarth.modifySetMap_ = function( e )
      return;
 
   var feature = e.feature;
-  var overlayClass = feature.geometry.CLASS_NAME;
+  
+   // deal with clusters
+  if( feature.cluster ){
+    var cluster = feature.cluster;
+    var e2 = {};
+    for( var i = 0; i < cluster.length; i++ ){
+      e2.feature = cluster[i];
+      GoogleEarth.modifySetMap_(e2);
+    } 
+    return;
+  }
+
+  var overlayClass = feature.geometry.CLASS_NAME.split("OpenLayers.Geometry.")[1];
   
   if (!feature['__gme_id']) 
   {
@@ -1056,18 +1069,35 @@ GoogleEarth.modifyClearMap_ = function( e )
      return;
 
   var feature = e.feature;
-  var overlayClass = feature.geometry.CLASS_NAME;
+
+   // deal with clusters
+  if( feature.cluster ){
+    var cluster = feature.cluster;
+    var e2 = {};
+    for( var i = 0; i < cluster.length; i++ ){
+      e2.feature = cluster[i];
+      GoogleEarth.modifyClearMap_(e2);
+    } 
+    return;
+  }
+
+  var overlayClass = feature.geometry.CLASS_NAME.split("OpenLayers.Geometry.")[1];
   
+  if (GoogleEarth.overlays_[overlayClass][feature['__gme_id']] && GoogleEarth.overlays_[overlayClass][feature['__gme_id']].placemark) {
+      var features = this.instance_.getFeatures();
+      features.removeChild(GoogleEarth.overlays_[overlayClass][feature['__gme_id']].placemark);
+
   //  delete GoogleEarth.overlays_[overlayClass][this['__gme_id']];
     //this['__gme_id'] = undefined;
     delete GoogleEarth.overlays_[overlayClass][ feature['__gme_id'] ];
+  }
 }
   
 /**
  * @const
  * @type {Array.<string>}
  */
-GoogleEarth.OVERLAY_CLASSES = ['OpenLayers.Geometry.Point', 'OpenLayers.Geometry.LineString' ];
+GoogleEarth.OVERLAY_CLASSES = ['Point', 'LineString' ];
 // 'Polygon', 'Rectangle',    'Circle', 'KmlLayer', 'GroundOverlay', 'InfoWindow'];
 
 /**
