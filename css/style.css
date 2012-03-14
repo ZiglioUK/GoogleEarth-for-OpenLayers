@@ -36,7 +36,8 @@ h6 {
 .smallmap {
     border: 1px solid #CCCCCC;
     height: 300px;
-    width: 600px;
+    width: 50%;
+    float:left;
 }
 
 .slider-tooltip {
@@ -49,7 +50,6 @@ h6 {
 }
 
 #container {
-    width: 700px;
     margin: auto;
 }
 
