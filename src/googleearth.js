@@ -10,7 +10,7 @@
  * @constructor
  * @param {google.maps.Map} map the Map associated with this Earth instance.
  */
-function GoogleEarth(map) {
+function GoogleEarth(map,mapDiv) {
   if (!google || !google.earth) {
     throw 'google.earth not loaded';
   }
@@ -37,7 +37,10 @@ function GoogleEarth(map) {
   /**
    * @private
    * @type {Node} */
-  this.mapDiv_ = map.getDiv();
+	if(mapDiv)
+    this.mapDiv_ = mapDiv;
+	else
+    this.mapDiv_ = map.getDiv();
 
   /**
    * @private
@@ -162,11 +165,12 @@ GoogleEarth.prototype.mapTypeChanged_ = function() {
  */
 GoogleEarth.prototype.showEarth_ = function() {
   var mapTypeControlDiv = this.findMapTypeControlDiv_();
-  this.setZIndexes_(mapTypeControlDiv);
-  this.addShim_(mapTypeControlDiv);
-
-  this.controlDiv_.style.display = '';
-
+	if( mapTypeControlDiv ){
+	  this.setZIndexes_(mapTypeControlDiv);
+	  this.addShim_(mapTypeControlDiv);
+	
+	  this.controlDiv_.style.display = '';
+	}
   this.earthVisible_ = true;
   if (!this.instance_) {
     this.initializeEarth_();
@@ -820,13 +824,15 @@ GoogleEarth.prototype.addEarthControl_ = function() {
   var mapDiv = this.mapDiv_;
 
   var control = this.controlDiv_ = document.createElement('DIV');
-  control.style.position = 'absolute';
+  control.id = "control";
+	control.style.position = 'absolute';
   control.style.width = 0;
   control.style.height = 0;
   control.index = 0;
   control.style.display = 'none';
 
   var inner = this.innerDiv_ = document.createElement('DIV');
+	inner.id = "inner";
   inner.style.width = mapDiv.clientWidth + 'px';
   inner.style.height = mapDiv.clientHeight + 'px';
   inner.style.position = 'absolute';
@@ -834,13 +840,16 @@ GoogleEarth.prototype.addEarthControl_ = function() {
   control.appendChild(inner);
 
   var earthDiv = this.earthDiv_ = document.createElement('DIV');
-  earthDiv.style.position = 'absolute';
-  earthDiv.style.width = '100%';
-  earthDiv.style.height = '100%';
+  earthDiv.id = "earthDiv"
+	earthDiv.style.position = 'absolute';
+  earthDiv.style.width = mapDiv.clientWidth + 'px';
+  earthDiv.style.height = mapDiv.clientHeight + 'px';
 
-  inner.appendChild(earthDiv);
+//  inner.appendChild(earthDiv);
+  mapDiv.appendChild( earthDiv );
 
   this.map_.controls[google.maps.ControlPosition.TOP_LEFT].push(control);
+//  mapDiv.appendChild( control );
 
   var that = this;
 
