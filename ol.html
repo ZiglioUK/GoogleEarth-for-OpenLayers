@@ -67,18 +67,18 @@
                 
                 google.maps.event.addListenerOnce( gsat.mapObject, 'resize', function(){
 //                layer.events.register( 'loadend', gsat, function(){
-									console.log('load Google Earth')
+									 console.log('load Google Earth')
                    // do something only the first time the map is loaded
-		//                try 
+		                try 
 		                {
 		                    googleEarth = new GoogleEarth(map, document.getElementById('earth'));
 		                }
-		//                catch( e )
-		//                {
-		//                    // Google Earth hasn't been loaded or supported on this system
-		//                    alert(e);
-		//                    return;
-		//                }
+		                catch( e )
+		                {
+		                    // Google Earth hasn't been loaded or supported on this system
+		                    alert(e);
+		                    return;
+		                }
 		                timeline = new OpenLayers.Timeline({
 		                    map: map,
 		                    timeline: "#timeline",
