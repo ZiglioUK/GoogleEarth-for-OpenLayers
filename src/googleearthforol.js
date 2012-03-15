@@ -230,10 +230,10 @@ GoogleEarth.prototype.refresh_ = function() {
     return;
   
   this.placemarks_ = {};
-  this.flyToMapView_(true);
   this.clearPlacemarks_();
   this.displayCounter_++;
   this.addMapOverlays_();
+  this.flyToMapView_(true);
 };
 
 /**
@@ -243,8 +243,10 @@ GoogleEarth.prototype.refresh_ = function() {
  */
 GoogleEarth.prototype.clearPlacemarks_ = function() {
   var features = this.instance_.getFeatures();
-  while (features.getFirstChild()) {
-    features.removeChild(features.getFirstChild());
+  var feature;
+  while ( feature = features.getFirstChild() ) {
+//    console.log( 'remove ' ); console.log( feature );
+    features.removeChild(feature);
   }
 };
 
@@ -328,7 +330,7 @@ GoogleEarth.getKMLColor_ = function(hex, opacity) {
 GoogleEarth.prototype.createPlacemark_ = function(overlay) {
   var placemarkId = this.displayCounter_ + 'GEV3_' + overlay['__gme_id'];
   try{
-    console.log( 'createPlacemark ' + placemarkId );
+//    console.log( 'createPlacemark ' + placemarkId );
     overlay.placemark = this.instance_.createPlacemark(placemarkId);
     this.placemarks_[placemarkId] = overlay;
   }
@@ -1174,6 +1176,7 @@ GoogleEarth.modifySetMap_ = function(e) {
   if (!feature['__gme_id']) {
     feature['__gme_id'] = GoogleEarth.counter_++;
     GoogleEarth.overlays_[overlayClass][feature['__gme_id']] = feature;
+//    console.log('Add ' + overlayClass + '[' + feature['__gme_id'] + ']' );
   }
 };
 
@@ -1197,13 +1200,13 @@ GoogleEarth.modifyClearMap_ = function(e) {
   var overlayClass = feature.geometry.CLASS_NAME.split("OpenLayers.Geometry.")[1];
 
   if (GoogleEarth.overlays_[overlayClass][feature['__gme_id']] ){
-    if( GoogleEarth.overlays_[overlayClass][feature['__gme_id']].placemark) {
-        var features = googleEarth.instance_.getFeatures();
-        features.removeChild(GoogleEarth.overlays_[overlayClass][feature['__gme_id']].placemark);
-     }
-     // delete GoogleEarth.overlays_[overlayClass][this['__gme_id']];
-     // this['__gme_id'] = undefined;
+//    if( GoogleEarth.overlays_[overlayClass][feature['__gme_id']].placemark) {
+//        var features = googleEarth.instance_.getFeatures();
+//        features.removeChild(GoogleEarth.overlays_[overlayClass][feature['__gme_id']].placemark);
+//     }
+//     console.log('Remove ' + overlayClass + '[' + feature['__gme_id'] + ']' );
      delete GoogleEarth.overlays_[overlayClass][feature['__gme_id']];
+     feature['__gme_id'] = undefined;
     }
 }
 
