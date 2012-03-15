@@ -8,9 +8,10 @@
 
 /**
  * @constructor
- * @param {google.maps.Map} map the Map associated with this Earth instance.
+ * @param {google.maps.Map}
+ *          map the Map associated with this Earth instance.
  */
-function GoogleEarth(map,mapDiv) {
+function GoogleEarth(map, mapDiv) {
   if (!google || !google.earth) {
     throw 'google.earth not loaded';
   }
@@ -26,51 +27,61 @@ function GoogleEarth(map,mapDiv) {
   /**
    * @const
    * @private
-   * @type {string} */
+   * @type {string}
+   */
   this.RED_ICON_ = 'http://maps.google.com/mapfiles/kml/paddle/red-circle.png';
 
   /**
    * @private
-   * @type {google.maps.Map} */
+   * @type {google.maps.Map}
+   */
   this.map_ = map;
 
   /**
    * @private
-   * @type {Node} */
-	if(mapDiv)
+   * @type {Node}
+   */
+  if (mapDiv)
     this.mapDiv_ = mapDiv;
-	else
+  else
     this.mapDiv_ = map.getDiv();
 
   /**
    * @private
-   * @type {boolean} */
+   * @type {boolean}
+   */
   this.earthVisible_ = false;
 
   /**
    * @private
-   * @type {string} */
+   * @type {string}
+   */
   this.earthTitle_ = 'Earth';
 
   /**
    * @private
-   * @type {Object} */
+   * @type {Object}
+   */
   this.moveEvents_ = [];
 
   /**
    * @private
-   * @type {Object} */
+   * @type {Object}
+   */
   this.overlays_ = {};
 
   /**
    * @private
-   * @type {?Object} */
+   * @type {?Object}
+   */
   this.lastClickedPlacemark_ = null;
 
   /**
    * Keep track of each time the 3D view is reloaded/refreshed
+   * 
    * @private
-   * @type {number} */
+   * @type {number}
+   */
   this.displayCounter_ = 0;
 
   this.addEarthMapType_();
@@ -80,7 +91,8 @@ window['GoogleEarth'] = GoogleEarth;
 
 /**
  * @const
- * @type {string} */
+ * @type {string}
+ */
 GoogleEarth.MAP_TYPE_ID = 'GoogleEarthAPI';
 GoogleEarth['MAP_TYPE_ID'] = GoogleEarth.MAP_TYPE_ID;
 
@@ -112,32 +124,38 @@ GoogleEarth.prototype['getInstance'] = GoogleEarth.prototype.getInstance;
 GoogleEarth.prototype.addEarthMapType_ = function() {
   var map = this.map_;
 
-  var earthMapType = /** @type {google.maps.MapType} */({
-    tileSize: new google.maps.Size(256, 256),
-    maxZoom: 19,
-    name: this.earthTitle_,
+  var earthMapType = /** @type {google.maps.MapType} */
+  ({
+    tileSize : new google.maps.Size(256, 256),
+    maxZoom : 19,
+    name : this.earthTitle_,
     // The alt helps the findMapTypeControlDiv work.
-    alt: this.earthTitle_,
-    getTile:
-      /**
-       * @param {google.maps.Point} tileCoord the tile coordinate.
-       * @param {number} zoom the zoom level.
-       * @param {Node} ownerDocument n/a.
-       * @return {Node} the overlay.
-       */
-      function(tileCoord, zoom, ownerDocument) {
-        var div = ownerDocument.createElement('DIV');
-        return div;
-      }
+    alt : this.earthTitle_,
+    getTile :
+    /**
+     * @param {google.maps.Point}
+     *          tileCoord the tile coordinate.
+     * @param {number}
+     *          zoom the zoom level.
+     * @param {Node}
+     *          ownerDocument n/a.
+     * @return {Node} the overlay.
+     */
+    function(tileCoord, zoom, ownerDocument) {
+      var div = ownerDocument.createElement('DIV');
+      return div;
+    }
   });
 
   map.mapTypes.set(GoogleEarth.MAP_TYPE_ID, earthMapType);
 
-  var options = /** @type {google.maps.MapTypeControlOptions} */({
-    mapTypeControlOptions: {
-      mapTypeIds: [google.maps.MapTypeId.ROADMAP,
-                   google.maps.MapTypeId.SATELLITE,
-                   GoogleEarth.MAP_TYPE_ID]
+  var options = /** @type {google.maps.MapTypeControlOptions} */
+  ({
+    mapTypeControlOptions : {
+      mapTypeIds : [
+          google.maps.MapTypeId.ROADMAP, google.maps.MapTypeId.SATELLITE,
+          GoogleEarth.MAP_TYPE_ID
+      ]
     }
   });
 
@@ -155,7 +173,8 @@ GoogleEarth.prototype.addEarthMapType_ = function() {
 GoogleEarth.prototype.mapTypeChanged_ = function() {
   if (this.map_.getMapTypeId() == GoogleEarth.MAP_TYPE_ID) {
     this.showEarth_();
-  } else {
+  }
+  else {
     this.switchToMapView_();
   }
 };
@@ -165,12 +184,12 @@ GoogleEarth.prototype.mapTypeChanged_ = function() {
  */
 GoogleEarth.prototype.showEarth_ = function() {
   var mapTypeControlDiv = this.findMapTypeControlDiv_();
-	if( mapTypeControlDiv ){
-	  this.setZIndexes_(mapTypeControlDiv);
-	  this.addShim_(mapTypeControlDiv);
-	
-	  this.controlDiv_.style.display = '';
-	}
+  if (mapTypeControlDiv) {
+    this.setZIndexes_(mapTypeControlDiv);
+    this.addShim_(mapTypeControlDiv);
+
+    this.controlDiv_.style.display = '';
+  }
   this.earthVisible_ = true;
   if (!this.instance_) {
     this.initializeEarth_();
@@ -193,16 +212,18 @@ GoogleEarth.prototype.refresh_ = function() {
 
 /**
  * Clear all marker position_changed events
+ * 
  * @private
  */
 GoogleEarth.prototype.clearMoveEvents_ = function() {
-  for (var i = 0, evnt; evnt = this.moveEvents_[i]; i++) {
+  for ( var i = 0, evnt; evnt = this.moveEvents_[i]; i++) {
     google.maps.event.removeListener(evnt);
   }
 };
 
 /**
  * Clear all features on this instance.
+ * 
  * @private
  */
 GoogleEarth.prototype.clearPlacemarks_ = function() {
@@ -214,8 +235,10 @@ GoogleEarth.prototype.clearPlacemarks_ = function() {
 
 /**
  * Fly to the current map zoom, add slight tilt.
+ * 
  * @private
- * @param {boolean} tilt whether to teleport and tilt, or just flyto.
+ * @param {boolean}
+ *          tilt whether to teleport and tilt, or just flyto.
  */
 GoogleEarth.prototype.flyToMapView_ = function(tilt) {
   var center = this.map_.getCenter();
@@ -241,17 +264,20 @@ GoogleEarth.prototype.flyToMapView_ = function(tilt) {
     window.setTimeout(function() {
       ge.getOptions().setFlyToSpeed(1);
     }, 250);
-  } else {
+  }
+  else {
     // Fly to the approximate map view at regular speed.
     ge.getView().setAbstractView(lookAt);
   }
 };
 
 /**
- *  @param {string|*} hex color value in rgb.
- *  @param {string|*=} opacity -- in percentage.
- *  @return {string} abgr KML style color.
- *  @private
+ * @param {string|*}
+ *          hex color value in rgb.
+ * @param {string|*=}
+ *          opacity -- in percentage.
+ * @return {string} abgr KML style color.
+ * @private
  */
 GoogleEarth.getKMLColor_ = function(hex, opacity) {
   if (hex[0] == '#') {
@@ -259,7 +285,8 @@ GoogleEarth.getKMLColor_ = function(hex, opacity) {
   }
   if (typeof opacity == 'undefined') {
     opacity = 'FF';
-  } else {
+  }
+  else {
     opacity = parseInt(parseFloat(opacity) * 255, 10).toString(16);
     if (opacity.length == 1) {
       opacity = '0' + opacity;
@@ -268,13 +295,15 @@ GoogleEarth.getKMLColor_ = function(hex, opacity) {
   var R = hex.substring(0, 2);
   var G = hex.substring(2, 4);
   var B = hex.substring(4, 6);
-  var abgr = [opacity, B, G, R].join('');
+  var abgr = [
+      opacity, B, G, R
+  ].join('');
   return abgr;
 };
 
-
 /**
- * @param {google.maps.MVCObject} overlay the map overlay.
+ * @param {google.maps.MVCObject}
+ *          overlay the map overlay.
  * @return {String} ID for the Placemark.
  * @private
  */
@@ -284,7 +313,8 @@ GoogleEarth.prototype.generatePlacemarkId_ = function(overlay) {
 };
 
 /**
- * @param {google.maps.MVCObject} overlay the map overlay.
+ * @param {google.maps.MVCObject}
+ *          overlay the map overlay.
  * @return {google.earth.KmlPlacemark} placemark the placemark.
  * @private
  */
@@ -295,7 +325,8 @@ GoogleEarth.prototype.createPlacemark_ = function(overlay) {
 };
 
 /**
- * @param {google.maps.Rectangle} rectangle the rectangle overlay.
+ * @param {google.maps.Rectangle}
+ *          rectangle the rectangle overlay.
  * @private
  */
 GoogleEarth.prototype.createRectangle_ = function(rectangle) {
@@ -309,11 +340,11 @@ GoogleEarth.prototype.createRectangle_ = function(rectangle) {
   placemark.setGeometry(ge.createPolygon(''));
   var ring = ge.createLinearRing('');
 
-  //set the style
+  // set the style
   var style = this.createStyle_(rectangle);
   placemark.setStyleSelector(style);
 
-  //create the rectangle
+  // create the rectangle
   var coords = ring.getCoordinates();
   coords.pushLatLngAlt(ne.lat(), ne.lng(), 0);
   coords.pushLatLngAlt(ne.lat(), sw.lng(), 0);
@@ -327,7 +358,8 @@ GoogleEarth.prototype.createRectangle_ = function(rectangle) {
 };
 
 /**
- * @param {google.maps.GroundOverlay} groundOverlay the GroundOverlay.
+ * @param {google.maps.GroundOverlay}
+ *          groundOverlay the GroundOverlay.
  * @private
  */
 GoogleEarth.prototype.addGroundOverlay_ = function(groundOverlay) {
@@ -349,7 +381,8 @@ GoogleEarth.prototype.addGroundOverlay_ = function(groundOverlay) {
 };
 
 /**
- * @param {string} url for kml.
+ * @param {string}
+ *          url for kml.
  * @private
  */
 GoogleEarth.prototype.addKML_ = function(url) {
@@ -364,15 +397,16 @@ GoogleEarth.prototype.addKML_ = function(url) {
       return;
     }
     ge.getFeatures().appendChild(kml);
- });
+  });
 };
 
 /**
- * @param {String} placemarkId the id of the placemark.
+ * @param {String}
+ *          placemarkId the id of the placemark.
  * @private
  */
 GoogleEarth.prototype.updatePlacemark_ = function(placemarkId) {
-  //TODO(jlivni) generalize to work with more than just Markers/Points
+  // TODO(jlivni) generalize to work with more than just Markers/Points
   var marker = this.overlays_[placemarkId];
   var placemark = this.instance_.getElementById(placemarkId);
   var geom = placemark.getGeometry();
@@ -382,7 +416,8 @@ GoogleEarth.prototype.updatePlacemark_ = function(placemarkId) {
 };
 
 /**
- * @param {google.maps.Marker} marker The map marker.
+ * @param {google.maps.Marker}
+ *          marker The map marker.
  * @private
  */
 GoogleEarth.prototype.createPoint_ = function(marker) {
@@ -398,9 +433,10 @@ GoogleEarth.prototype.createPoint_ = function(marker) {
   // Create style map for placemark
   var icon = ge.createIcon('');
   if (marker.getIcon()) {
-    //TODO(jlivni) fix for if it's a markerImage
+    // TODO(jlivni) fix for if it's a markerImage
     icon.setHref(marker.getIcon());
-  } else {
+  }
+  else {
     icon.setHref(this.RED_ICON_);
   }
 
@@ -416,19 +452,19 @@ GoogleEarth.prototype.createPoint_ = function(marker) {
 
   ge.getFeatures().appendChild(placemark);
 
-  //add listener for marker move on Map
+  // add listener for marker move on Map
   var that = this;
-  var moveEvent = google.maps.event.addListener(marker,
-    'position_changed',
-    function() {
-      var placemarkId = that.generatePlacemarkId_(marker);
-      that.updatePlacemark_(placemarkId);
-    });
+  var moveEvent = google.maps.event.addListener(marker, 'position_changed',
+      function() {
+        var placemarkId = that.generatePlacemarkId_(marker);
+        that.updatePlacemark_(placemarkId);
+      });
   this.moveEvents_.push(moveEvent);
 };
 
 /**
- * @param {google.maps.Polygon} polygon the polygon overlay.
+ * @param {google.maps.Polygon}
+ *          polygon the polygon overlay.
  * @private
  */
 GoogleEarth.prototype.createPolygon_ = function(polygon) {
@@ -439,19 +475,18 @@ GoogleEarth.prototype.createPolygon_ = function(polygon) {
   var poly = ge.createPolygon('');
   placemark.setGeometry(poly);
 
-  //set the style
+  // set the style
   var style = this.createStyle_(polygon);
   placemark.setStyleSelector(style);
 
-
-  //assume single linearRing
+  // assume single linearRing
   var outer = ge.createLinearRing('');
   poly.setOuterBoundary(outer);
   var coords = outer.getCoordinates();
   var path = polygon.getPath().getArray();
 
-  //TODO(jlivni) use getPaths and multiple rings
-  for (var i = 0, latLng; latLng = path[i]; i++) {
+  // TODO(jlivni) use getPaths and multiple rings
+  for ( var i = 0, latLng; latLng = path[i]; i++) {
     coords.pushLatLngAlt(latLng.lat(), latLng.lng(), 0);
   }
 
@@ -461,34 +496,38 @@ GoogleEarth.prototype.createPolygon_ = function(polygon) {
 /**
  * Computes the LatLng produced by starting from a given LatLng and heading a
  * given distance.
+ * 
  * @see http://williams.best.vwh.net/avform.htm#LL
- * @param {google.maps.LatLng} from The LatLng from which to start.
- * @param {number} distance The distance to travel.
- * @param {number} heading The heading in degrees clockwise from north.
+ * @param {google.maps.LatLng}
+ *          from The LatLng from which to start.
+ * @param {number}
+ *          distance The distance to travel.
+ * @param {number}
+ *          heading The heading in degrees clockwise from north.
  * @return {google.maps.LatLng} The result.
  * @private
  */
 GoogleEarth.computeOffset_ = function(from, distance, heading) {
   var radius = 6378137;
   distance /= radius;
-  heading = heading * (Math.PI / 180); //convert to radians
+  heading = heading * (Math.PI / 180); // convert to radians
   var fromLat = from.lat() * (Math.PI / 180);
   var fromLng = from.lng() * (Math.PI / 180);
   var cosDistance = Math.cos(distance);
   var sinDistance = Math.sin(distance);
   var sinFromLat = Math.sin(fromLat);
   var cosFromLat = Math.cos(fromLat);
-  var sinLat = cosDistance * sinFromLat +
-      sinDistance * cosFromLat * Math.cos(heading);
-  var dLng = Math.atan2(
-      sinDistance * cosFromLat * Math.sin(heading),
+  var sinLat = cosDistance * sinFromLat + sinDistance * cosFromLat
+      * Math.cos(heading);
+  var dLng = Math.atan2(sinDistance * cosFromLat * Math.sin(heading),
       cosDistance - sinFromLat * sinLat);
   return new google.maps.LatLng((Math.asin(sinLat) / (Math.PI / 180)),
-                                (fromLng + dLng) / (Math.PI / 180));
+      (fromLng + dLng) / (Math.PI / 180));
 };
 
 /**
- * @param {google.maps.Circle} circle The circle overlay.
+ * @param {google.maps.Circle}
+ *          circle The circle overlay.
  * @private
  */
 GoogleEarth.prototype.createCircle_ = function(circle) {
@@ -499,13 +538,13 @@ GoogleEarth.prototype.createCircle_ = function(circle) {
   placemark.setGeometry(ge.createPolygon(''));
   var ring = ge.createLinearRing('');
 
-  //set the style
+  // set the style
   var style = this.createStyle_(circle);
   placemark.setStyleSelector(style);
 
-  //create a circle
+  // create a circle
   var vertices = 25;
-  for (var i = 0; i < vertices; i++) {
+  for ( var i = 0; i < vertices; i++) {
     var heading = 360 / vertices * i;
     var offset = GoogleEarth.computeOffset_(center, radius, heading);
     ring.getCoordinates().pushLatLngAlt(offset.lat(), offset.lng(), 0);
@@ -516,7 +555,8 @@ GoogleEarth.prototype.createCircle_ = function(circle) {
 };
 
 /**
- * @param {google.maps.Polyline} polyline The map polyline overlay.
+ * @param {google.maps.Polyline}
+ *          polyline The map polyline overlay.
  * @private
  */
 GoogleEarth.prototype.createPolyline_ = function(polyline) {
@@ -528,14 +568,14 @@ GoogleEarth.prototype.createPolyline_ = function(polyline) {
   lineString.setTessellate(true);
   placemark.setGeometry(lineString);
 
-  //set the style
+  // set the style
   var style = this.createStyle_(polyline);
   placemark.setStyleSelector(style);
 
   var coords = lineString.getCoordinates();
   var path = polyline.getPath().getArray();
-  //TODO(jlivni) use getPaths for case of multiple rings
-  for (var i = 0, latLng; latLng = path[i]; i++) {
+  // TODO(jlivni) use getPaths for case of multiple rings
+  for ( var i = 0, latLng; latLng = path[i]; i++) {
     coords.pushLatLngAlt(latLng.lat(), latLng.lng(), 0);
   }
 
@@ -543,7 +583,8 @@ GoogleEarth.prototype.createPolyline_ = function(polyline) {
 };
 
 /**
- * @param {google.maps.MVCObject} overlay the map overlay.
+ * @param {google.maps.MVCObject}
+ *          overlay the map overlay.
  * @return {google.earth.KmlStyle} the style.
  * @private
  */
@@ -559,8 +600,8 @@ GoogleEarth.prototype.createStyle_ = function(overlay) {
   var strokeColor = this.getMVCVal_(overlay, 'strokeColor', '#000000');
   var fillColor = this.getMVCVal_(overlay, 'fillColor', '#000000');
 
-  lineStyle.getColor().set(GoogleEarth.getKMLColor_(strokeColor,
-                                                   strokeOpacity));
+  lineStyle.getColor()
+      .set(GoogleEarth.getKMLColor_(strokeColor, strokeOpacity));
   polyStyle.getColor().set(GoogleEarth.getKMLColor_(fillColor, fillOpacity));
 
   return style;
@@ -568,9 +609,13 @@ GoogleEarth.prototype.createStyle_ = function(overlay) {
 
 /**
  * Gets the property value from an mvc object.
- * @param {google.maps.MVCObject} mvcObject The object.
- * @param {string} property The property.
- * @param {string|number} def The default.
+ * 
+ * @param {google.maps.MVCObject}
+ *          mvcObject The object.
+ * @param {string}
+ *          property The property.
+ * @param {string|number}
+ *          def The default.
  * @return {string|number} The property, or default if property undefined.
  * @private
  */
@@ -578,36 +623,39 @@ GoogleEarth.prototype.getMVCVal_ = function(mvcObject, property, def) {
   var val = mvcObject.get(property);
   if (typeof val == 'undefined') {
     return def;
-  } else {
-    return /** @type {string|number} */(val);
+  }
+  else {
+    return /** @type {string|number} */
+    (val);
   }
 };
 
 /**
- * Add  map overlays to Earth.
+ * Add map overlays to Earth.
+ * 
  * @private
  */
 GoogleEarth.prototype.addMapOverlays_ = function() {
   var overlays = this.getOverlays_();
-  for (var i = 0, marker; marker = overlays['Marker'][i]; i++) {
+  for ( var i = 0, marker; marker = overlays['Marker'][i]; i++) {
     this.createPoint_(marker);
   }
-  for (var i = 0, polygon; polygon = overlays['Polygon'][i]; i++) {
+  for ( var i = 0, polygon; polygon = overlays['Polygon'][i]; i++) {
     this.createPolygon_(polygon);
   }
-  for (var i = 0, polyline; polyline = overlays['Polyline'][i]; i++) {
+  for ( var i = 0, polyline; polyline = overlays['Polyline'][i]; i++) {
     this.createPolyline_(polyline);
   }
-  for (var i = 0, rectangle; rectangle = overlays['Rectangle'][i]; i++) {
+  for ( var i = 0, rectangle; rectangle = overlays['Rectangle'][i]; i++) {
     this.createRectangle_(rectangle);
   }
-  for (var i = 0, circle; circle = overlays['Circle'][i]; i++) {
+  for ( var i = 0, circle; circle = overlays['Circle'][i]; i++) {
     this.createCircle_(circle);
   }
-  for (var i = 0, kml; kml = overlays['KmlLayer'][i]; i++) {
+  for ( var i = 0, kml; kml = overlays['KmlLayer'][i]; i++) {
     this.addKML_(kml.getUrl());
   }
-  for (var i = 0, overlay; overlay = overlays['GroundOverlay'][i]; i++) {
+  for ( var i = 0, overlay; overlay = overlays['GroundOverlay'][i]; i++) {
     this.addGroundOverlay_(overlay);
   }
 };
@@ -618,12 +666,13 @@ GoogleEarth.prototype.addMapOverlays_ = function() {
 GoogleEarth.prototype.initializeEarth_ = function() {
   var that = this;
   google.earth.createInstance(this.earthDiv_, function(instance) {
-    that.instance_ = /** @type {google.earth.GEPlugin} */(instance);
+    that.instance_ = /** @type {google.earth.GEPlugin} */
+    (instance);
     that.addEarthEvents_();
     that.refresh_();
   }, function(e) {
     that.hideEarth_();
-    //TODO(jlivni) record previous maptype
+    // TODO(jlivni) record previous maptype
     that.map_.setMapTypeId(google.maps.MapTypeId.ROADMAP);
     throw 'Google Earth API failed to initialize: ' + e;
   });
@@ -651,21 +700,20 @@ GoogleEarth.prototype.addEarthEvents_ = function() {
 
   var that = this;
   google.maps.event.addListener(this.map_,
-                                GoogleEarth.INFO_WINDOW_OPENED_EVENT_,
-                                function(infowindow) {
-    //If Earth is open, create balloon
-    if (!that.earthVisible_) {
-      return;
-    }
-    var balloon = that.instance_.createHtmlStringBalloon('');
-    //TODO assuming anchor == marker == lastclicked
-    var placemark = that.lastClickedPlacemark_;
-    balloon.setFeature(placemark);
-    balloon.setContentString(infowindow.getContent());
-    that.instance_.setBalloon(balloon);
-  });
+      GoogleEarth.INFO_WINDOW_OPENED_EVENT_, function(infowindow) {
+        // If Earth is open, create balloon
+        if (!that.earthVisible_) {
+          return;
+        }
+        var balloon = that.instance_.createHtmlStringBalloon('');
+        // TODO assuming anchor == marker == lastclicked
+        var placemark = that.lastClickedPlacemark_;
+        balloon.setFeature(placemark);
+        balloon.setContentString(infowindow.getContent());
+        that.instance_.setBalloon(balloon);
+      });
 
-   // On click of a placemark we want to trigger the map click event.
+  // On click of a placemark we want to trigger the map click event.
   google.earth.addEventListener(ge.getGlobe(), 'click', function(event) {
     var target = event.getTarget();
     var overlay = that.overlays_[target.getId()];
@@ -673,7 +721,7 @@ GoogleEarth.prototype.addEarthEvents_ = function() {
       event.preventDefault();
       // Close any currently opened map info windows.
       var infoWindows = that.getOverlaysForType_('InfoWindow');
-      for (var i = 0, infoWindow; infoWindow = infoWindows[i]; i++) {
+      for ( var i = 0, infoWindow; infoWindow = infoWindows[i]; i++) {
         infoWindow.close();
       }
       that.lastClickedPlacemark_ = target;
@@ -685,26 +733,29 @@ GoogleEarth.prototype.addEarthEvents_ = function() {
 
 /**
  * Set the Map view to match Earth.
+ * 
  * @private
  */
 GoogleEarth.prototype.matchMapToEarth_ = function() {
   var lookAt = this.instance_.getView().copyAsLookAt(
       this.instance_.ALTITUDE_RELATIVE_TO_GROUND);
   var range = lookAt.getRange();
-  var zoom = Math.round(
-      GoogleEarth.MAX_EARTH_ZOOM_ - (Math.log(range) / Math.log(2)));
+  var zoom = Math.round(GoogleEarth.MAX_EARTH_ZOOM_
+      - (Math.log(range) / Math.log(2)));
   if (!this.map_.getZoom() == zoom) {
     this.map_.setZoom(zoom - 1);
-  } else {
+  }
+  else {
     this.map_.setZoom(zoom);
   }
-  var center = new google.maps.LatLng(lookAt.getLatitude(),
-                                      lookAt.getLongitude());
+  var center = new google.maps.LatLng(lookAt.getLatitude(), lookAt
+      .getLongitude());
   this.map_.panTo(center);
 };
 
 /**
  * Animate from Earth to Maps view.
+ * 
  * @private
  */
 GoogleEarth.prototype.switchToMapView_ = function() {
@@ -731,6 +782,7 @@ GoogleEarth.prototype.switchToMapView_ = function() {
 
 /**
  * Hide the Earth div.
+ * 
  * @private
  */
 GoogleEarth.prototype.hideEarth_ = function() {
@@ -742,15 +794,17 @@ GoogleEarth.prototype.hideEarth_ = function() {
 };
 
 /**
- * Sets the z-index of all controls except for the map type control so that
- * they appear behind Earth.
- * @param {Node} mapTypeControlDiv the control div.
+ * Sets the z-index of all controls except for the map type control so that they
+ * appear behind Earth.
+ * 
+ * @param {Node}
+ *          mapTypeControlDiv the control div.
  * @private
  */
 GoogleEarth.prototype.setZIndexes_ = function(mapTypeControlDiv) {
   var oldIndex = mapTypeControlDiv.style.zIndex;
   var siblings = this.controlDiv_.parentNode.childNodes;
-  for (var i = 0, sibling; sibling = siblings[i]; i++) {
+  for ( var i = 0, sibling; sibling = siblings[i]; i++) {
     sibling['__gme_ozi'] = sibling.style.zIndex;
     // Sets the zIndex of all controls to be behind Earth.
     sibling.style.zIndex = -1;
@@ -765,14 +819,15 @@ GoogleEarth.prototype.setZIndexes_ = function(mapTypeControlDiv) {
  */
 GoogleEarth.prototype.unsetZIndexes_ = function() {
   var siblings = this.controlDiv_.parentNode.childNodes;
-  for (var i = 0, sibling; sibling = siblings[i]; i++) {
+  for ( var i = 0, sibling; sibling = siblings[i]; i++) {
     // Set the old zIndex back
     sibling.style.zIndex = sibling['__gme_ozi'];
   }
 };
 
 /**
- * @param {Node} mapTypeControlDiv the control div.
+ * @param {Node}
+ *          mapTypeControlDiv the control div.
  * @private
  */
 GoogleEarth.prototype.addShim_ = function(mapTypeControlDiv) {
@@ -795,6 +850,7 @@ GoogleEarth.prototype.addShim_ = function(mapTypeControlDiv) {
 
 /**
  * Remove the shim containing the earth div.
+ * 
  * @private
  */
 GoogleEarth.prototype.removeShim_ = function() {
@@ -810,7 +866,7 @@ GoogleEarth.prototype.findMapTypeControlDiv_ = function() {
   var title = 'title=[\'\"]?' + this.earthTitle_ + '[\"\']?';
   var regex = new RegExp(title);
   var siblings = this.controlDiv_.parentNode.childNodes;
-  for (var i = 0, sibling; sibling = siblings[i]; i++) {
+  for ( var i = 0, sibling; sibling = siblings[i]; i++) {
     if (regex.test(sibling.innerHTML)) {
       return sibling;
     }
@@ -824,15 +880,15 @@ GoogleEarth.prototype.addEarthControl_ = function() {
   var mapDiv = this.mapDiv_;
 
   var control = this.controlDiv_ = document.createElement('DIV');
-  control.id = "control";
-	control.style.position = 'absolute';
+  control.id = "GEcontrol";
+  control.style.position = 'absolute';
   control.style.width = 0;
   control.style.height = 0;
   control.index = 0;
   control.style.display = 'none';
 
   var inner = this.innerDiv_ = document.createElement('DIV');
-	inner.id = "inner";
+  inner.id = "GEinner";
   inner.style.width = mapDiv.clientWidth + 'px';
   inner.style.height = mapDiv.clientHeight + 'px';
   inner.style.position = 'absolute';
@@ -841,15 +897,15 @@ GoogleEarth.prototype.addEarthControl_ = function() {
 
   var earthDiv = this.earthDiv_ = document.createElement('DIV');
   earthDiv.id = "earthDiv"
-	earthDiv.style.position = 'absolute';
+  earthDiv.style.position = 'absolute';
   earthDiv.style.width = mapDiv.clientWidth + 'px';
   earthDiv.style.height = mapDiv.clientHeight + 'px';
 
-//  inner.appendChild(earthDiv);
-  mapDiv.appendChild( earthDiv );
+  // inner.appendChild(earthDiv);
+  mapDiv.appendChild(earthDiv);
 
   this.map_.controls[google.maps.ControlPosition.TOP_LEFT].push(control);
-//  mapDiv.appendChild( control );
+  // mapDiv.appendChild( control );
 
   var that = this;
 
@@ -869,14 +925,15 @@ GoogleEarth.prototype.resizeEarth_ = function() {
 };
 
 /**
- * @param {string} type type of overlay (Polygon, etc).
+ * @param {string}
+ *          type type of overlay (Polygon, etc).
  * @return {Array.<Object>} list of overlays of given type currently on map.
  * @private
  */
 GoogleEarth.prototype.getOverlaysForType_ = function(type) {
   var tmp = [];
   var overlays = GoogleEarth.overlays_[type];
-  for (var i in overlays) {
+  for ( var i in overlays) {
     if (overlays.hasOwnProperty(i)) {
       var overlay = overlays[i];
       if (overlay.get('map') == this.map_) {
@@ -895,7 +952,7 @@ GoogleEarth.prototype.getOverlays_ = function() {
   var overlays = {};
   var overlayClasses = GoogleEarth.OVERLAY_CLASSES;
 
-  for (var i = 0, overlayClass; overlayClass = overlayClasses[i]; i++) {
+  for ( var i = 0, overlayClass; overlayClass = overlayClasses[i]; i++) {
     overlays[overlayClass] = this.getOverlaysForType_(overlayClass);
   }
   return overlays;
@@ -908,11 +965,11 @@ GoogleEarth.overlays_ = {};
 
 /**
  * override the open property for infowindow
+ * 
  * @private
  */
 GoogleEarth.modifyOpen_ = function() {
-  google.maps.InfoWindow.prototype.openOriginal_ =
-      google.maps.InfoWindow.prototype['open'];
+  google.maps.InfoWindow.prototype.openOriginal_ = google.maps.InfoWindow.prototype['open'];
 
   GoogleEarth.overlays_['InfoWindow'] = {};
   google.maps.InfoWindow.prototype['open'] = function(map, anchor) {
@@ -921,7 +978,8 @@ GoogleEarth.modifyOpen_ = function() {
         this['__gme_id'] = GoogleEarth.counter_++;
         GoogleEarth.overlays_['InfoWindow'][this['__gme_id']] = this;
       }
-    } else {
+    }
+    else {
       delete GoogleEarth.overlays_['InfoWindow'][this['__gme_id']];
       this['__gme_id'] = undefined;
     }
@@ -931,7 +989,8 @@ GoogleEarth.modifyOpen_ = function() {
 };
 
 /**
- * @param {string} overlayClass overlay type, such as Marker, Polygon, etc.
+ * @param {string}
+ *          overlayClass overlay type, such as Marker, Polygon, etc.
  * @private
  */
 GoogleEarth.modifySetMap_ = function(overlayClass) {
@@ -945,7 +1004,8 @@ GoogleEarth.modifySetMap_ = function(overlayClass) {
         this['__gme_id'] = GoogleEarth.counter_++;
         GoogleEarth.overlays_[overlayClass][this['__gme_id']] = this;
       }
-    } else {
+    }
+    else {
       delete GoogleEarth.overlays_[overlayClass][this['__gme_id']];
       this['__gme_id'] = undefined;
     }
@@ -958,11 +1018,14 @@ GoogleEarth.modifySetMap_ = function(overlayClass) {
  * @const
  * @type {Array.<string>}
  */
-GoogleEarth.OVERLAY_CLASSES = ['Marker', 'Polyline', 'Polygon', 'Rectangle',
-    'Circle', 'KmlLayer', 'GroundOverlay', 'InfoWindow'];
+GoogleEarth.OVERLAY_CLASSES = [
+    'Marker', 'Polyline', 'Polygon', 'Rectangle', 'Circle', 'KmlLayer',
+    'GroundOverlay', 'InfoWindow'
+];
 
 /**
  * Keep track of total number of placemarks added.
+ * 
  * @type {number}
  * @private
  */
@@ -970,12 +1033,13 @@ GoogleEarth.counter_ = 0;
 
 /**
  * Wrapper to call appropriate prototype override methods for all overlays
+ * 
  * @private
  */
 GoogleEarth.trackOverlays_ = function() {
   var overlayClasses = GoogleEarth.OVERLAY_CLASSES;
 
-  for (var i = 0, overlayClass; overlayClass = overlayClasses[i]; i++) {
+  for ( var i = 0, overlayClass; overlayClass = overlayClasses[i]; i++) {
     GoogleEarth.modifySetMap_(overlayClass);
     if (overlayClass == 'InfoWindow') {
       GoogleEarth.modifyOpen_();
