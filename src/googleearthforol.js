@@ -467,26 +467,30 @@ GoogleEarth.prototype.createPoint_ = function(feature) {
   if (attributes.name) {
     placemark.setName(attributes.name);
   }
-//  try 
-  {
-    if (attributes.when) {
-      var ISOString = OpenLayers.Date.toISOString(attributes.when);
-      var timeStamp = this.instance_.createTimeStamp(ISOString);
-      timeStamp.getWhen().set(ISOString);
-      placemark.setTimePrimitive(timeStamp);
-    }
-  }
-//  catch (e) {
-//  }
+  
+  /*
+	if (attributes.when) {
+		var ISOString = OpenLayers.Date.toISOString(attributes.when);
 
+		try {
+			var timeStamp = this.instance_.createTimeStamp(ISOString);
+			timeStamp.getWhen().set(ISOString);
+			placemark.setTimePrimitive(timeStamp);
+		} 
+		catch (e) {
+			console.log( ISOString + ' ' + e);
+		}
+	}
+  */
   // Create style map for placemark
   var icon = ge.createIcon('');
 
-  if (style && style.externalGraphic) {
-
-    icon.setHref(GoogleEarth.prototype.absoluteUrl(style.externalGraphic));
-  }
-  else {
+//  if (style && style.externalGraphic) {
+//
+//    icon.setHref(GoogleEarth.prototype.absoluteUrl(style.externalGraphic));
+//  }
+//  else 
+{
     icon.setHref(this.RED_ICON_);
   }
 
