@@ -1,9 +1,11 @@
 // Copyright 2011 Google Inc. All Rights Reserved.
+// Copyright 2012 Sirtrack Ltd. All Rights Reserved.
 
 /**
- * @fileoverview Earth API library for Maps v3.
- * usage:  var ge = new GoogleEarth(map);.
+ * @fileoverview Ispired by the Earth API library for Maps v3.
+ * usage:  var ge = new GoogleEarth(map, optionalDiv);.
  * @author jlivni@google.com (Josh Livni).
+ * @author Emanuele Ziglioli, Sirtrack Ltd. 
  */
 
 /**
